@@ -1,0 +1,16 @@
+{
+  "rule_id": "011_security_group_opened",
+  "rule_kind": "signal",
+  "created_by": "opencdr",
+  "description": "Security group ingress rule added. Overly permissive rules (e.g. 0.0.0.0/0) expose resources to the internet.",
+  "enabled": true,
+  "severity": "MEDIUM",
+  "notify": true,
+  "response_module": "deauthorize_security_group_rules",
+  "playbook": "The specific CIDR-based rule that was added has been automatically revoked (IPv6 ranges, prefix lists, and security-group-reference sources are not auto-revoked -- review those manually in the EC2 console). Confirm the revocation in CloudTrail/VPC Flow Logs, and check whether the source CIDR (0.0.0.0/0, ::/0) or port (22, 3389, 5432, 3306, etc) indicates this was a deliberate attack rather than a misconfiguration before re-authorizing anything.",
+  "version": 1,
+  "conditions": [
+    { "field": "activity_name", "op": "in", "value": ["AuthorizeSecurityGroupIngress", "AuthorizeSecurityGroupEgress"] },
+    { "field": "api.service", "op": "equals", "value": "ec2.amazonaws.com" }
+  ]
+}

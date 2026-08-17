@@ -1,0 +1,22 @@
+{
+  "rule_id": "026_guardduty_s3_exposure_exfiltration",
+  "rule_kind": "signal",
+  "created_by": "opencdr",
+  "description": "GuardDuty S3 finding indicating public exposure or active exfiltration of bucket data. Excludes the Low-severity config-drift findings (AccountBlockPublicAccessDisabled/BucketBlockPublicAccessDisabled) and Discovery:S3/* (recon, not exposure/exfiltration) -- left to the catch-all instead.",
+  "enabled": true,
+  "severity": "HIGH",
+  "notify": true,
+  "response_module": "block_s3_bucket_public_access",
+  "playbook": "GuardDuty has flagged this S3 bucket as either publicly exposed or subject to exfiltration-pattern access. Public access has been blocked automatically. Review the bucket's contents for sensitive data, check CloudTrail data events for the access pattern GuardDuty flagged, and treat as a potential data breach if exfiltration-family. For a stricter posture (also blocking legitimate cross-account access), rewrite response_module to quarantine_s3_bucket.",
+  "version": 1,
+  "_sync_note": "If this rule's activity_name pattern changes, update 028_guardduty_catchall.json's matching not_matches condition -- see docs/detection-rules.md#keeping-this-in-sync.",
+  "conditions": [
+    { "field": "source", "op": "equals", "value": "guardduty" },
+    { "field": "gd_resource_type", "op": "equals", "value": "S3" },
+    {
+      "field": "activity_name",
+      "op": "matches",
+      "value": "^(Policy|Exfiltration):S3/(BucketAnonymousAccessGranted|BucketPublicAccessGranted|AnomalousBehavior|MaliciousIPCaller)$"
+    }
+  ]
+}

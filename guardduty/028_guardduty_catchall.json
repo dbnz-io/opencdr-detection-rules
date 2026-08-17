@@ -1,0 +1,20 @@
+{
+  "rule_id": "028_guardduty_catchall",
+  "rule_kind": "signal",
+  "created_by": "opencdr",
+  "description": "Catch-all for GuardDuty findings at Medium/High/Critical severity not already covered by a curated rule (024-027). Visibility only, no automated response. MUST be updated whenever a new curated GuardDuty rule is added -- see 'Keeping this in sync' in docs/detection-rules.md, or the new finding type will double-fire (one signal from the curated rule, one from here).",
+  "enabled": true,
+  "severity": "MEDIUM",
+  "notify": true,
+  "response_module": "",
+  "playbook": "GuardDuty finding not covered by a curated OpenCDR rule. Review in the GuardDuty console and triage manually.",
+  "version": 1,
+  "conditions": [
+    { "field": "source", "op": "equals", "value": "guardduty" },
+    { "field": "severity", "op": "in", "value": ["MEDIUM", "HIGH", "CRITICAL"] },
+    { "field": "activity_name", "op": "not_matches", "value": "^(UnauthorizedAccess|CredentialAccess):IAMUser/(TorIPCaller|MaliciousIPCaller(\\.Custom)?|CompromisedCredentials|InstanceCredentialExfiltration\\.(InsideAWS|OutsideAWS)|ResourceCredentialExfiltration\\.(InsideAWS|OutsideAWS)|ConsoleLoginSuccess\\.B)$" },
+    { "field": "activity_name", "op": "not_matches", "value": "^(Backdoor|CryptoCurrency|Trojan):EC2/" },
+    { "field": "activity_name", "op": "not_matches", "value": "^(Policy|Exfiltration):S3/(BucketAnonymousAccessGranted|BucketPublicAccessGranted|AnomalousBehavior|MaliciousIPCaller)$" },
+    { "field": "activity_name", "op": "not_prefix", "value": "AttackSequence:" }
+  ]
+}

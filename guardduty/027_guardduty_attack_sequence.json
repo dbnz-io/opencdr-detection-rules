@@ -1,0 +1,17 @@
+{
+  "rule_id": "027_guardduty_attack_sequence",
+  "rule_kind": "signal",
+  "created_by": "opencdr",
+  "description": "GuardDuty Attack Sequence finding -- AWS's own multi-signal correlation output, indicating an in-progress or recently-completed attack across multiple resources. Always Critical severity by GuardDuty's own design.",
+  "enabled": true,
+  "severity": "CRITICAL",
+  "notify": true,
+  "response_module": "",
+  "playbook": "This is a GuardDuty Attack Sequence finding -- AWS has already correlated multiple weak signals into a high-confidence attack narrative spanning several resources. Open the finding in the GuardDuty console immediately (the console visualizes the full sequence and involved resources far better than this alert alone can) and triage as an active incident. No automated response is taken by default because the affected resource type varies per sequence, and the finding's own resource shape is a multi-resource list, not the single-resource shape the other curated rules assume -- respond manually per the resources listed in the finding.",
+  "version": 1,
+  "_sync_note": "If this rule's activity_name pattern changes, update 028_guardduty_catchall.json's matching not_prefix condition -- see docs/detection-rules.md#keeping-this-in-sync.",
+  "conditions": [
+    { "field": "source", "op": "equals", "value": "guardduty" },
+    { "field": "activity_name", "op": "prefix", "value": "AttackSequence:" }
+  ]
+}

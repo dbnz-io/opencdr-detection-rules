@@ -1,0 +1,68 @@
+name: Validate Rules
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate:
+    name: Validate Detection Rules
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Validate JSON syntax, required fields, and rule_id uniqueness
+        run: |
+          python3 - <<'EOF'
+          import json, sys
+          from pathlib import Path
+
+          RULE_REQUIRED_FIELDS = ("rule_id", "rule_kind", "severity", "enabled")
+          LIST_REQUIRED_FIELDS = ("rule_id", "rule_kind", "values")
+          SKIP_FILES = {"test_atomic_rule.json", "test_correlation_rule.json", "test_detection_rule.json"}
+          rule_dir = Path(".")
+          # Recursive: rule files live in per-source subfolders (cloudtrail/,
+          # guardduty/, correlation/, and any future source folder added the
+          # same way) -- a flat glob here would silently validate zero rules.
+          paths = sorted(p for p in rule_dir.rglob("*.json") if p.name not in SKIP_FILES)
+
+          if not paths:
+              print("WARNING: no rule files found", file=sys.stderr)
+              sys.exit(0)
+
+          errors = []
+          seen_ids = {}
+          for path in paths:
+              try:
+                  rule = json.loads(path.read_text())
+              except json.JSONDecodeError as exc:
+                  errors.append(f"{path}: invalid JSON — {exc}")
+                  continue
+
+              if rule.get("rule_kind") == "list":
+                  for field in LIST_REQUIRED_FIELDS:
+                      if field not in rule:
+                          errors.append(f"{path}: missing required field '{field}'")
+                  if "values" in rule and not isinstance(rule["values"], list):
+                      errors.append(f"{path}: 'values' must be an array")
+              else:
+                  for field in RULE_REQUIRED_FIELDS:
+                      if field not in rule:
+                          errors.append(f"{path}: missing required field '{field}'")
+
+              rule_id = rule.get("rule_id")
+              if rule_id:
+                  if rule_id in seen_ids:
+                      errors.append(f"{path}: duplicate rule_id '{rule_id}' (also in {seen_ids[rule_id]})")
+                  else:
+                      seen_ids[rule_id] = path
+
+          if errors:
+              for msg in errors:
+                  print(f"ERROR: {msg}", file=sys.stderr)
+              sys.exit(1)
+
+          print(f"All {len(paths)} rule(s) passed validation.")
+          EOF
