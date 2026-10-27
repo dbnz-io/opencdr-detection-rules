@@ -1,0 +1,8 @@
+{
+  "list_id": "privileged-role-arns",
+  "matcher": "exact",
+  "value_type": "arn",
+  "description": "Example privileged IAM role ARNs.",
+  "labels": ["example", "identity", "critical-assets"],
+  "values": ["arn:aws:iam::111122223333:role/SecurityAdmin", "arn:aws:iam::111122223333:role/BreakGlass"]
+}

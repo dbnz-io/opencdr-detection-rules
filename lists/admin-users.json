@@ -1,0 +1,8 @@
+{
+  "list_id": "admin-users",
+  "matcher": "exact",
+  "value_type": "iam_user",
+  "description": "Example IAM users approved for administrative activity.",
+  "labels": ["example", "identity", "allowlist"],
+  "values": ["alice-admin", "break-glass-admin"]
+}

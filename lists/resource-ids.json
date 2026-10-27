@@ -1,0 +1,8 @@
+{
+  "list_id": "protected-resource-ids",
+  "matcher": "exact",
+  "value_type": "resource_id",
+  "description": "Example identifiers for protected cloud resources.",
+  "labels": ["example", "critical-assets"],
+  "values": ["i-0123456789abcdef0", "db-production-primary"]
+}

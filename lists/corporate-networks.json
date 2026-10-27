@@ -1,0 +1,8 @@
+{
+  "list_id": "corporate-networks",
+  "matcher": "cidr",
+  "value_type": "cidr",
+  "description": "Example IPv4 and IPv6 networks allowed to access administrative services.",
+  "labels": ["example", "network", "allowlist"],
+  "values": ["192.0.2.0/24", "2001:db8:100::/48"]
+}

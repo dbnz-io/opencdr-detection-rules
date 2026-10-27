@@ -1,0 +1,8 @@
+{
+  "list_id": "approved-aws-accounts",
+  "matcher": "exact",
+  "value_type": "aws_account_id",
+  "description": "Example AWS accounts approved for cross-account activity.",
+  "labels": ["example", "aws", "allowlist"],
+  "values": ["111122223333", "444455556666"]
+}

@@ -17,6 +17,7 @@ Rules live one folder per event source, mirroring how the consuming engine's par
 cloudtrail/    19 signal rules + 4 pure-CloudTrail correlation rules
 guardduty/     5 signal rules (4 curated families + 1 catch-all)
 correlation/   2 cross-source correlation rules (span CloudTrail + GuardDuty)
+lists/         reusable list examples (independent from rule releases)
 ```
 
 Adding a new event source (GitHub audit log, Falco, etc.) means adding a new top-level folder the
@@ -49,9 +50,11 @@ Matches a single normalized event. When every condition passes, a signal is writ
 ```
 
 **Operators**: `exists`, `not_exists`, `equals`, `not_equals`, `in`, `not_in`, `in_list`, `not_in_list`
-(membership against a `rule_kind: "list"` rule — see [List rules](#list-rules); needs a `list_id`
+(membership against a reusable list — see [Reusable lists](#reusable-lists); needs a `list_id`
 instead of `value`), `contains`, `not_contains`, `prefix`, `not_prefix`, `suffix`, `not_suffix`,
 `matches`, `not_matches` (regex), `wildcard` (matches any event, no `value` needed).
+Reusable lists are managed independently through Core's `/lists` API; see
+[`lists/README.md`](lists/README.md). The old `rule_kind: "list"` representation is legacy-only.
 
 **Normalized fields available in conditions** (produced by the consuming repo's
 `src/domain/ocsf_min_parser.py`):
@@ -242,15 +245,16 @@ Both `threshold`/`signal_conditions` combinations are a coarse **count**, not a 
 `024`s with no `009` at all. This is an existing engine-wide property (rule `022` already has the
 same shape, 4 rule_ids/threshold 2), not something specific to cross-source rules.
 
-## List rules
+## Reusable lists
 
 A static value list other rules reference by ID via `in_list`/`not_in_list` — not itself a
 detection rule, no `conditions`/`severity`/`response_actions`.
 
 ```json
 {
-  "rule_id": "automation-identities",
-  "rule_kind": "list",
+  "list_id": "automation-identities",
+  "matcher": "exact",
+  "value_type": "iam_user",
   "values": ["ci-deploy-role", "terraform-apply", "cdk-toolkit"]
 }
 ```
@@ -259,9 +263,9 @@ detection rule, no `conditions`/`severity`/`response_actions`.
 { "field": "actor.user_name", "op": "not_in_list", "list_id": "automation-identities" }
 ```
 
-`list_id` must match a `list` rule's `rule_id`. No shipped rules use this yet — it exists so you
-can build your own exclusion lists (e.g. CI/CD or IaC identities that would otherwise trip a
-correlation rule tuned for human behavior).
+Lists live independently from rule releases and are managed through Core's `/lists` API. Updating
+a list activates a new immutable value snapshot without republishing every ruleset that uses it.
+See [`lists/`](lists/) for examples covering `exact`, `cidr`, and every value type.
 
 ## What ships out of the box
 
@@ -312,9 +316,8 @@ defense evasion, credential access, and exfiltration.
 ## How these rules get consumed
 
 [dbnz-io/opencdr](https://github.com/dbnz-io/opencdr) pulls this repo in as a git submodule at
-`support_files/detection_rules`, pinned to a specific commit. Its `scripts/load_rules.sh` and
-`scripts/opencdr.py rules load` both do a plain recursive scan + upsert of everything here into a
-running deployment's DynamoDB detection-rules table; `scripts/test_rules_local.py` runs every rule
+`support_files/detection_rules`, pinned to a specific commit. Its rule loaders skip `lists/`, whose
+documents are instead applied through the independent `/lists` API; `scripts/test_rules_local.py` runs every rule
 here against sample events without touching AWS. Bumping the submodule pin (`git submodule update
 --remote support_files/detection_rules` from the consuming repo, then commit the pointer change) is
 how a change here reaches a deployment — merging a PR to this repo alone does not.

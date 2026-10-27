@@ -1,0 +1,8 @@
+{
+  "list_id": "blocked-user-agents",
+  "matcher": "exact",
+  "value_type": "string",
+  "description": "Example generic string indicators.",
+  "labels": ["example", "indicator"],
+  "values": ["example-scanner/1.0", "unapproved-automation"]
+}

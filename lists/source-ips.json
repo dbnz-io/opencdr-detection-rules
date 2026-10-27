@@ -1,0 +1,8 @@
+{
+  "list_id": "known-source-ips",
+  "matcher": "exact",
+  "value_type": "ip",
+  "description": "Example individual source IP indicators.",
+  "labels": ["example", "network", "indicator"],
+  "values": ["192.0.2.10", "2001:db8::10"]
+}

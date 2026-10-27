@@ -20,7 +20,9 @@ jobs:
           from pathlib import Path
 
           RULE_REQUIRED_FIELDS = ("rule_id", "rule_kind", "severity", "enabled")
-          LIST_REQUIRED_FIELDS = ("rule_id", "rule_kind", "values")
+          LIST_REQUIRED_FIELDS = ("list_id", "matcher", "values")
+          LIST_MATCHERS = {"exact", "cidr"}
+          LIST_VALUE_TYPES = {"string", "ip", "cidr", "iam_user", "arn", "aws_account_id", "resource_id"}
           SKIP_FILES = {"test_atomic_rule.json", "test_correlation_rule.json", "test_detection_rule.json"}
           rule_dir = Path(".")
           # Recursive: rule files live in per-source subfolders (cloudtrail/,
@@ -41,12 +43,23 @@ jobs:
                   errors.append(f"{path}: invalid JSON — {exc}")
                   continue
 
-              if rule.get("rule_kind") == "list":
+              if "lists" in path.parts:
                   for field in LIST_REQUIRED_FIELDS:
                       if field not in rule:
                           errors.append(f"{path}: missing required field '{field}'")
-                  if "values" in rule and not isinstance(rule["values"], list):
-                      errors.append(f"{path}: 'values' must be an array")
+                  if rule.get("matcher") not in LIST_MATCHERS:
+                      errors.append(f"{path}: matcher must be exact or cidr")
+                  if rule.get("value_type", "string") not in LIST_VALUE_TYPES:
+                      errors.append(f"{path}: unsupported value_type")
+                  if not isinstance(rule.get("values"), list) or not rule.get("values"):
+                      errors.append(f"{path}: 'values' must be a non-empty array")
+                  list_id = rule.get("list_id")
+                  if list_id:
+                      if list_id in seen_ids:
+                          errors.append(f"{path}: duplicate list_id '{list_id}' (also in {seen_ids[list_id]})")
+                      else:
+                          seen_ids[list_id] = path
+                  continue
               else:
                   for field in RULE_REQUIRED_FIELDS:
                       if field not in rule:
@@ -95,5 +108,5 @@ jobs:
                   print(f"ERROR: {msg}", file=sys.stderr)
               sys.exit(1)
 
-          print(f"All {len(paths)} rule(s) passed validation.")
+          print(f"All {len(paths)} rule/list document(s) passed validation.")
           EOF
