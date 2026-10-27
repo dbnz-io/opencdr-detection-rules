@@ -6,9 +6,9 @@
   "enabled": true,
   "severity": "CRITICAL",
   "notify": true,
-  "response_module": "disable_access_key",
+  "response_module": "",
   "playbook": "Immediately disable and delete the newly created root access key. Root access keys must not exist per AWS security best practices. Treat this as a compromise event — review who performed the action and audit all recent root activity.",
-  "version": 1,
+  "version": 2,
   "conditions": [
     { "field": "actor.type", "op": "equals", "value": "Root" },
     { "field": "activity_name", "op": "equals", "value": "CreateAccessKey" },

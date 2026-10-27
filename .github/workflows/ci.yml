@@ -52,6 +52,37 @@ jobs:
                       if field not in rule:
                           errors.append(f"{path}: missing required field '{field}'")
 
+                  if rule.get("response_module"):
+                      errors.append(
+                          f"{path}: non-empty response_module is legacy; use response_actions"
+                      )
+                  actions = rule.get("response_actions", [])
+                  if not isinstance(actions, list):
+                      errors.append(f"{path}: response_actions must be an array")
+                  else:
+                      for index, action in enumerate(actions):
+                          if not isinstance(action, dict):
+                              errors.append(
+                                  f"{path}: response_actions[{index}] must be an object"
+                              )
+                              continue
+                          if set(action) != {"module", "target"}:
+                              errors.append(
+                                  f"{path}: response_actions[{index}] requires only module and target"
+                              )
+                          if not isinstance(action.get("module"), str) or not action.get("module"):
+                              errors.append(
+                                  f"{path}: response_actions[{index}].module must be non-empty"
+                              )
+                          target = action.get("target")
+                          if not isinstance(target, dict) or any(
+                              not isinstance(value, str) or not value
+                              for value in (target or {}).values()
+                          ):
+                              errors.append(
+                                  f"{path}: response_actions[{index}].target must map keys to field paths"
+                              )
+
               rule_id = rule.get("rule_id")
               if rule_id:
                   if rule_id in seen_ids:

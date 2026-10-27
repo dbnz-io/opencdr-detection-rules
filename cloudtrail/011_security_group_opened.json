@@ -6,9 +6,17 @@
   "enabled": true,
   "severity": "MEDIUM",
   "notify": true,
-  "response_module": "deauthorize_security_group_rules",
+  "response_actions": [
+    {
+      "module": "deauthorize_security_group_rules",
+      "target": {
+        "group_id": "raw_event.detail.requestParameters.groupId",
+        "rules": "raw_event.detail.requestParameters.ipPermissions.items"
+      }
+    }
+  ],
   "playbook": "The specific CIDR-based rule that was added has been automatically revoked (IPv6 ranges, prefix lists, and security-group-reference sources are not auto-revoked -- review those manually in the EC2 console). Confirm the revocation in CloudTrail/VPC Flow Logs, and check whether the source CIDR (0.0.0.0/0, ::/0) or port (22, 3389, 5432, 3306, etc) indicates this was a deliberate attack rather than a misconfiguration before re-authorizing anything.",
-  "version": 1,
+  "version": 2,
   "conditions": [
     { "field": "activity_name", "op": "in", "value": ["AuthorizeSecurityGroupIngress", "AuthorizeSecurityGroupEgress"] },
     { "field": "api.service", "op": "equals", "value": "ec2.amazonaws.com" }

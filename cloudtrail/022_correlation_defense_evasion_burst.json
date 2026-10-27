@@ -6,7 +6,9 @@
   "enabled": true,
   "severity": "CRITICAL",
   "notify": true,
-  "response_module": "disable_user",
+  "response_actions": [
+    { "module": "disable_user", "target": { "user_name": "group_value" } }
+  ],
   "playbook": "This is a strong indicator of an active intrusion. The actor is systematically disabling logging and detection. Disable the actor immediately, re-enable all affected services, and initiate a full incident response. Assume all activity since the first evasion action may be unlogged.",
   "group_by": "actor.user_name",
   "time_window_seconds": 600,

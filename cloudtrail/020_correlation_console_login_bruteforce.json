@@ -6,7 +6,9 @@
   "enabled": true,
   "severity": "CRITICAL",
   "notify": true,
-  "response_module": "disable_user",
+  "response_actions": [
+    { "module": "disable_user", "target": { "user_name": "group_value" } }
+  ],
   "playbook": "Disable the user account immediately. The volume of MFA-less logins suggests automated credential attack. Reset the password, enforce MFA, review source IPs for threat intelligence hits, and check for any successful login in the window.",
   "group_by": "actor.user_name",
   "time_window_seconds": 900,

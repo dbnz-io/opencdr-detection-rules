@@ -6,9 +6,16 @@
   "enabled": true,
   "severity": "HIGH",
   "notify": true,
-  "response_module": "start_config_recorder",
+  "response_actions": [
+    {
+      "module": "start_config_recorder",
+      "target": {
+        "recorder_name": "raw_event.detail.requestParameters.configurationRecorderName"
+      }
+    }
+  ],
   "playbook": "Re-enable the Config recorder and delivery channel. Review the configuration timeline gap — any resource changes made while Config was off will not have been recorded. Cross-reference with CloudTrail for activity during the outage window.",
-  "version": 1,
+  "version": 2,
   "conditions": [
     { "field": "activity_name", "op": "in", "value": ["StopConfigurationRecorder", "DeleteConfigurationRecorder", "DeleteDeliveryChannel"] },
     { "field": "api.service", "op": "equals", "value": "config.amazonaws.com" }

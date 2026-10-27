@@ -6,9 +6,16 @@
   "enabled": true,
   "severity": "HIGH",
   "notify": true,
-  "response_module": "revoke_rds_snapshot_public_access",
+  "response_actions": [
+    {
+      "module": "revoke_rds_snapshot_public_access",
+      "target": {
+        "snapshot_id": "raw_event.detail.requestParameters.dBSnapshotIdentifier"
+      }
+    }
+  ],
   "playbook": "Check the snapshot's restore attribute in the RDS console. If 'all' was added to the restore attribute list, the snapshot is publicly accessible. Remove the public permission immediately, assess what data the snapshot contains, and treat as a data breach.",
-  "version": 1,
+  "version": 2,
   "conditions": [
     { "field": "activity_name", "op": "equals", "value": "ModifyDBSnapshotAttribute" },
     { "field": "api.service", "op": "equals", "value": "rds.amazonaws.com" }

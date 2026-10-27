@@ -6,9 +6,17 @@
   "enabled": true,
   "severity": "HIGH",
   "notify": true,
-  "response_module": "delete_inline_policy",
+  "response_actions": [
+    {
+      "module": "delete_inline_policy",
+      "target": {
+        "principal_name": "resources.0.id",
+        "policy_name": "raw_event.detail.requestParameters.policyName"
+      }
+    }
+  ],
   "playbook": "Review the inline policy content in IAM. Check for wildcard actions ('*') or broad resource scopes. Inline policies attached to unexpected principals during off-hours are high-fidelity indicators of privilege escalation. Detach if not authorised.",
-  "version": 1,
+  "version": 2,
   "conditions": [
     { "field": "activity_name", "op": "in", "value": ["PutUserPolicy", "PutRolePolicy", "PutGroupPolicy"] }
   ]

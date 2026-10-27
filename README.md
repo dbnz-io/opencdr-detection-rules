@@ -39,7 +39,7 @@ Matches a single normalized event. When every condition passes, a signal is writ
   "enabled": true,
   "severity": "HIGH",
   "notify": true,
-  "response_module": "",
+  "response_actions": [],
   "playbook": "Verify user and source IP. If suspicious, revoke sessions and enforce MFA.",
   "conditions": [
     { "field": "activity_name", "op": "equals", "value": "ConsoleLogin" },
@@ -75,9 +75,32 @@ instead of `value`), `contains`, `not_contains`, `prefix`, `not_prefix`, `suffix
 | `api.error_code` | CloudTrail error code if the call failed |
 | `raw_event.detail.*` | Any field from the raw EventBridge event payload, if you need something not yet normalized |
 
-If `response_module` is set on a signal rule (e.g. `disable_access_key`), a match also queues an
-automated IR action in the consuming repo — see its
+If `response_actions` is non-empty, a match also queues one or more automated IR actions in the
+consuming repo. Each module has fixed target keys; each value maps that key to a field on the
+triggering detection. Targets are resolved when the detection is built, not later by the responder:
+
+```json
+"response_actions": [
+  {
+    "module": "disable_access_key",
+    "target": {
+      "user_name": "actor.user_name",
+      "access_key_id": "resources.0.id"
+    }
+  }
+]
+```
+
+The consuming Core's `GET /rules/schema` response is authoritative for module target contracts.
+The legacy single-string `response_module` field remains readable for compatibility, but new and
+catalog rules use `response_actions`. See Core's
 [Incident Response](https://github.com/dbnz-io/opencdr/blob/main/docs/incident-response.md) doc.
+
+Rule `004_root_access_key_created` is deliberately visibility-only. The current Dredge
+`disable_access_key` implementation requires IAM's `UserName` argument, while root access keys
+have no IAM username and AWS requires that argument to be omitted for root. The previous legacy
+configuration supplied the account ID as a username and could not remediate the key correctly;
+the playbook therefore requires manual root-key deletion until Dredge supports that operation.
 
 ## GuardDuty rules
 
@@ -95,7 +118,15 @@ Worked example — `024_guardduty_iam_credential_compromise.json`:
   "rule_kind": "signal",
   "severity": "HIGH",
   "notify": true,
-  "response_module": "disable_access_key",
+  "response_actions": [
+    {
+      "module": "disable_access_key",
+      "target": {
+        "user_name": "actor.user_name",
+        "access_key_id": "resources.0.id"
+      }
+    }
+  ],
   "conditions": [
     { "field": "source", "op": "equals", "value": "guardduty" },
     { "field": "gd_resource_type", "op": "equals", "value": "IAMUser" },
@@ -114,7 +145,7 @@ enough to exclude lower-confidence findings in the same family (e.g. `024` exclu
 *attempts* — those aren't confirmed compromise, and firing `disable_access_key` on a mere attempt
 is a needless disruption). The 5 shipped rules:
 
-| Rule | `gd_resource_type` | Matches | `response_module` |
+| Rule | `gd_resource_type` | Matches | Response action |
 |---|---|---|---|
 | `024` IAM credential compromise | `IAMUser` | Tor/malicious-IP callers, compromised/exfiltrated credentials, brute-forced console login | `disable_access_key` |
 | `025` EC2 backdoor/malware | `EC2` | `Backdoor`/`CryptoCurrency`/`Trojan` findings | `isolate_ec2_instances` |
@@ -122,7 +153,7 @@ is a needless disruption). The 5 shipped rules:
 | `027` Attack Sequence | — (multi-resource) | `AttackSequence:` prefix (AWS's own multi-signal correlation output, fixed Critical severity) | *(none — see below)* |
 | `028` Catch-all | — | `source == guardduty`, severity in `[MEDIUM, HIGH, CRITICAL]`, and none of 024/025/026/027's patterns | *(none)* |
 
-`027` deliberately has no `response_module`: an Attack Sequence finding's affected-resource shape
+`027` deliberately has no `response_actions`: an Attack Sequence finding's affected-resource shape
 is a multi-resource list, not the single-resource shape the other curated rules and their response
 modules assume. It still fires — visibility at Critical severity — but which resource to act on
 isn't safely inferable yet.
@@ -172,7 +203,9 @@ threshold is met. `signal_conditions` optionally restricts which signals count t
     { "field": "rule_id", "op": "equals", "value": "001_console_login_no_mfa" }
   ],
   "notify": true,
-  "response_module": "disable_user",
+  "response_actions": [
+    { "module": "disable_user", "target": { "user_name": "group_value" } }
+  ],
   "playbook": "Disable the user and investigate source IPs."
 }
 ```
@@ -192,16 +225,17 @@ correlation rules `020`-`023` stay in `cloudtrail/`, since they don't):
 - **`029_correlation_guardduty_credential_compromise_then_privesc`** — a GuardDuty credential-compromise
   finding (`024`) followed by a CloudTrail admin-policy attach (`009`) from the *same*
   `actor.user_name`. Uses the existing GSI — GuardDuty's parser populates `actor.user_name` for
-  IAM-related finding types, so this needs no new indexing. `response_module: "disable_user"` is
-  safe to wire live here, since `actor.user_name` is the same field the CloudTrail-only correlation
-  rules already resolve correctly in production.
+  IAM-related finding types, so this needs no new indexing. Its explicit `disable_user` target is
+  `group_value`, the same identity used to form the correlation window, and is safe to wire live
+  here since `actor.user_name` is the same field the CloudTrail-only correlation rules already
+  resolve correctly in production.
 - **`030_correlation_guardduty_backdoor_then_secrets_access`** — a GuardDuty EC2 backdoor/C2 finding
   (`025`) and a CloudTrail `GetSecretValue` call (`016`) from the same `network.source_ip` — the
   first shipped rule to use the scan-fallback path instead of a GSI. Deliberately
-  `response_module: ""` — the correlation alert's primary signal may end up being the GuardDuty
-  finding, which has no IAM-user resource for the automated-response username lookup to find, so an
-  automated action here could silently no-op on a real fraction of firings. Visibility-only until
-  that's worth solving properly.
+  configured with no response actions — the correlation alert's primary signal may end up being
+  the GuardDuty finding, which has no IAM-user resource for the automated-response username lookup
+  to find, so an automated action here could silently no-op on a real fraction of firings.
+  Visibility-only until that's worth solving properly.
 
 Both `threshold`/`signal_conditions` combinations are a coarse **count**, not a strict one-of-each
 — e.g. rule `029`'s `threshold: 2` over a 2-item `rule_id` list would in principle also fire on two
@@ -211,7 +245,7 @@ same shape, 4 rule_ids/threshold 2), not something specific to cross-source rule
 ## List rules
 
 A static value list other rules reference by ID via `in_list`/`not_in_list` — not itself a
-detection rule, no `conditions`/`severity`/`response_module`.
+detection rule, no `conditions`/`severity`/`response_actions`.
 
 ```json
 {

@@ -6,9 +6,14 @@
   "enabled": true,
   "severity": "CRITICAL",
   "notify": true,
-  "response_module": "enable_cloudtrail_logging",
+  "response_actions": [
+    {
+      "module": "enable_cloudtrail_logging",
+      "target": { "trail_name": "raw_event.detail.requestParameters.name" }
+    }
+  ],
   "playbook": "Re-enable CloudTrail logging immediately. Treat this as an active incident — an attacker attempting to blind your detection capability. Review all IAM activity in the window between the stop and re-enable. Check if other logging services (Config, GuardDuty) were also tampered with.",
-  "version": 1,
+  "version": 2,
   "conditions": [
     { "field": "activity_name", "op": "in", "value": ["StopLogging", "DeleteTrail", "UpdateTrail"] },
     { "field": "api.service", "op": "equals", "value": "cloudtrail.amazonaws.com" }

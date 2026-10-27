@@ -6,9 +6,14 @@
   "enabled": true,
   "severity": "HIGH",
   "notify": true,
-  "response_module": "block_s3_bucket_public_access",
+  "response_actions": [
+    {
+      "module": "block_s3_bucket_public_access",
+      "target": { "bucket_name": "raw_event.detail.requestParameters.bucketName" }
+    }
+  ],
   "playbook": "Immediately review the bucket's public access settings, ACL, and bucket policy. Re-enable the S3 public access block if it was removed. If data was exposed, assess what objects were accessible and for how long. Notify affected parties if PII or sensitive data may have been exposed.",
-  "version": 1,
+  "version": 2,
   "conditions": [
     { "field": "activity_name", "op": "in", "value": ["PutBucketAcl", "PutBucketPolicy", "DeletePublicAccessBlock"] },
     { "field": "api.service", "op": "equals", "value": "s3.amazonaws.com" },

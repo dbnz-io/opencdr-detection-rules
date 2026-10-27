@@ -6,7 +6,9 @@
   "enabled": true,
   "severity": "CRITICAL",
   "notify": true,
-  "response_module": "disable_user",
+  "response_actions": [
+    { "module": "disable_user", "target": { "user_name": "group_value" } }
+  ],
   "playbook": "An attacker running automated IAM tooling (e.g. Pacu, enumerate-iam) will generate many IAM signals in a short window. Disable the actor, revoke active sessions, and review every IAM change made during the burst window.",
   "group_by": "actor.user_name",
   "time_window_seconds": 300,

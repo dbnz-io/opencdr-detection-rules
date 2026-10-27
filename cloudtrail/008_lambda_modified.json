@@ -6,9 +6,14 @@
   "enabled": true,
   "severity": "MEDIUM",
   "notify": true,
-  "response_module": "disable_lambda_function",
+  "response_actions": [
+    {
+      "module": "disable_lambda_function",
+      "target": { "function_name": "raw_event.detail.requestParameters.functionName" }
+    }
+  ],
   "playbook": "The function's reserved concurrency has been set to 0 (throttled -- new invocations fail with TooManyRequestsException; in-flight executions are not interrupted). Confirm the change was made via an approved deployment pipeline. Review the function code, execution role, and environment variables for signs of backdoor (exfiltration URLs, hardcoded credentials, unexpected IAM role). If legitimate, remove the reserved concurrency override to restore normal invocation.",
-  "version": 1,
+  "version": 2,
   "conditions": [
     { "field": "api.service", "op": "equals", "value": "lambda.amazonaws.com" },
     { "field": "activity_name", "op": "matches", "value": "^(CreateFunction|UpdateFunctionCode)" }

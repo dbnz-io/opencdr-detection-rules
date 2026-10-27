@@ -6,9 +6,14 @@
   "enabled": true,
   "severity": "HIGH",
   "notify": true,
-  "response_module": "block_s3_bucket_public_access",
+  "response_actions": [
+    {
+      "module": "block_s3_bucket_public_access",
+      "target": { "bucket_name": "resources.0.id" }
+    }
+  ],
   "playbook": "GuardDuty has flagged this S3 bucket as either publicly exposed or subject to exfiltration-pattern access. Public access has been blocked automatically. Review the bucket's contents for sensitive data, check CloudTrail data events for the access pattern GuardDuty flagged, and treat as a potential data breach if exfiltration-family. For a stricter posture (also blocking legitimate cross-account access), rewrite response_module to quarantine_s3_bucket.",
-  "version": 1,
+  "version": 2,
   "_sync_note": "If this rule's activity_name pattern changes, update 028_guardduty_catchall.json's matching not_matches condition -- see docs/detection-rules.md#keeping-this-in-sync.",
   "conditions": [
     { "field": "source", "op": "equals", "value": "guardduty" },
